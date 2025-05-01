@@ -1,43 +1,63 @@
-import { JSX } from "react";
+import { JSX, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// src/pages/DashboardPage.jsx
-
+import WalletForm from "../components/WalletForm";
+import IncomeForm from "../components/IncomeForm";
+import ExpenseForm from "../components/ExpenseForm";
+import TransferForm from "../components/TransferForm";
+import Stats from "../components/Stats";
 
 const DashboardPage = (): JSX.Element => {
+  const [activeForm, setActiveForm] = useState<string>("stats");
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
+
+  const renderForm = () => {
+    switch (activeForm) {
+      case "stats": return <Stats />;
+      case "wallet": return <WalletForm />;
+      case "income": return <IncomeForm />;
+      case "expense": return <ExpenseForm />;
+      case "transfer": return <TransferForm />;
+      default: return null;
+    }
+  };
+
   return (
     <div className="flex w-screen h-screen">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-900 text-white p-6 space-y-4">
+      <div className="w-64 h-screen fixed top-0 left-0 bg-gray-900 text-white p-6 space-y-4">
         <h2 className="text-xl font-bold">Spendwise</h2>
         <nav className="space-y-2">
-          <a href="#" className="block hover:text-yellow-300">Add Wallet</a>
-          <a href="#" className="block hover:text-yellow-300">Add Income</a>
-          <a href="#" className="block hover:text-yellow-300">Add Expense</a>
+          <button onClick={() => setActiveForm("stats")} className="block hover:text-yellow-300">Dashboard</button>
+          <button onClick={() => setActiveForm("wallet")} className="block hover:text-yellow-300">Add Wallet</button>
+          <button onClick={() => setActiveForm("income")} className="block hover:text-yellow-300">Add Income</button>
+          <button onClick={() => setActiveForm("expense")} className="block hover:text-yellow-300">Add Expense</button>
+          <button onClick={() => setActiveForm("transfer")} className="block hover:text-yellow-300">Transfer</button>
         </nav>
+        <button onClick={handleLogout} className="mt-10 text-sm text-red-400 hover:text-red-200">Logout</button>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 bg-gray-100">
-        {/* Navbar */}
-        <div className="flex justify-between items-center bg-white shadow p-4 rounded">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <div className="relative group">
-            <button className="font-semibold">Shihab ▼</button>
-            <div className="absolute right-0 hidden group-hover:block bg-white border mt-1 shadow-lg">
-              <button onClick={handleLogout} className="block px-4 py-2 hover:bg-gray-200 w-full text-left">Logout</button>
-            </div>
-          </div>
+      <div className="ml-64 flex-1 p-6 bg-gray-100 overflow-auto">
+        <div className="bg-white shadow p-4 rounded">
+        {activeForm !== 'stats' && (
+          <>
+            <h1 className="text-2xl font-bold mb-4 capitalize">{`Add ${activeForm}`}</h1>
+            {renderForm()}
+          </>
+        )}
+        {activeForm == 'stats' && (
+          <>
+            <h1 className="text-2xl font-bold mb-4 capitalize">Dashboard Overview</h1>
+            {renderForm()}
+          </>
+        )}
         </div>
-        <div className="mt-6">Main Dashboard Content...</div>
       </div>
     </div>
   );
 };
+
 export default DashboardPage;
