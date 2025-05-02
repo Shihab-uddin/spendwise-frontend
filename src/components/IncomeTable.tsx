@@ -67,9 +67,26 @@ const IncomeTable = () => {
 
   const handleUpdate = (e: FormEvent) => {
     e.preventDefault();
-    toast.success("Edit form submitted (simulate save)");
-    closeModal();
+  
+    if (!selectedIncome) return;
+  
+    axios
+      .put(`/income/update/${selectedIncome.id}`, {
+        ...editData,
+        amount: Number(editData.amount),
+        walletId: Number(editData.walletId),
+      })
+      .then(() => {
+        toast.success("Income updated successfully");
+        closeModal();
+        fetchIncomes(); // refresh table
+      })
+      .catch((err) => {
+        toast.error("Failed to update income");
+        console.error(err);
+      });
   };
+  
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this income?")) return;

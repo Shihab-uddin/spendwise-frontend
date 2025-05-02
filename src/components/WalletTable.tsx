@@ -48,24 +48,41 @@ const WalletTable = () => {
 
   const handleUpdate = (e: FormEvent) => {
     e.preventDefault();
-    toast.success("Edit form submitted (simulate save)");
-    closeModal();
-  };
-
-  const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to delete this wallet?")) return;
-
+  
+    if (!selectedWallet) {
+      console.error("No wallet selected for update");
+      return;
+    }
+  
     axios
-      .delete(`/wallet/delete/${id}`)
+      .put(`/wallet/update/${selectedWallet.id}`, editData)
       .then(() => {
-        toast.success("Wallet deleted successfully");
+        toast.success("Wallet updated successfully");
         fetchWallets();
+        closeModal();
       })
       .catch((err) => {
-        toast.error("Failed to delete wallet");
+        toast.error("Failed to update wallet");
         console.error(err);
       });
   };
+  
+
+  const handleDelete = (id: string) => {
+    if (!confirm("Are you sure you want to delete this wallet?")) return;
+  
+    axios
+      .delete(`/wallet/delete/${id}`)
+      .then(() => {
+        toast.success("Wallet and its records deleted successfully");
+        fetchWallets(); // Refresh list after deletion
+      })
+      .catch((err) => {
+        toast.error("Failed to delete wallet");
+        console.error("Wallet delete error:", err);
+      });
+  };
+  
 
   return (
     <div className="mt-6 overflow-x-auto">

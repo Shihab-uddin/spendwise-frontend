@@ -70,11 +70,30 @@ type Wallet = {
     setShowModal(false);
   };
 
-  const handleUpdate = (e: FormEvent) => {
+  const handleUpdate = async (e: FormEvent) => {
     e.preventDefault();
-    toast.success("Edit form submitted (simulate save)");
-    closeModal();
+    if (!selectedExpense) return;
+    
+    axios
+      .put(`/expense/edit/${selectedExpense.id}`, {
+        ...editData,
+        name: editData.name,
+        amount: editData.amount,
+        description: editData.description,
+        date: new Date(editData.date).toISOString(), // convert to ISO format
+        walletId: editData.walletId,
+      })
+      .then(() => {
+        toast.success("Expense updated successfully");
+        closeModal();
+        fetchExpenses(); // refresh table
+      })
+      .catch((err) => {
+        toast.error("Failed to update expense");
+        console.error(err);
+      });
   };
+  
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this expense?")) return;

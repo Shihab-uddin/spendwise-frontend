@@ -10,11 +10,15 @@ const TransferTable = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [wallets, setWallets] = useState([]);
   const [editData, setEditData] = useState({
     description: "",
     amount: 0,
     date: "",
+    fromWalletId: "",
+    toWalletId: "",
   });
+
 
   const fetchTransfers = () => {
     setLoading(true);
@@ -32,7 +36,20 @@ const TransferTable = () => {
 
   useEffect(() => {
     fetchTransfers();
+    fetchWallets();
   }, []);
+  
+  const fetchWallets = () => {
+    axios
+    .get("/dashboard")
+    .then((res) => {
+      if (res.data?.wallets) {
+        setWallets(res.data.wallets);
+      }
+    })
+    .catch((err) => console.error("Failed to fetch wallets:", err));
+  };
+  
 
   const openModal = (transfer: any) => {
     setSelectedTransfer(transfer);
@@ -40,20 +57,42 @@ const TransferTable = () => {
       description: transfer.description || "",
       amount: transfer.amount || 0,
       date: transfer.date ? transfer.date.slice(0, 16) : "",
+      fromWalletId: transfer.fromWallet?.id || "",
+      toWalletId: transfer.toWallet?.id || "",
     });
     setShowModal(true);
   };
+  
 
   const closeModal = () => {
     setSelectedTransfer(null);
     setShowModal(false);
   };
 
-  const handleUpdate = (e: FormEvent) => {
+  const handleUpdate = async (e: FormEvent) => {
     e.preventDefault();
-    toast.success("Edit form submitted (simulate save)");
-    closeModal();
+    if (!selectedTransfer) return;
+  
+    axios
+      .put(`/transfer/edit/${selectedTransfer.id}`, {
+        description: editData.description,
+        amount: editData.amount,
+        date: new Date(editData.date).toISOString(),
+        fromWalletId: editData.fromWalletId,
+        toWalletId: editData.toWalletId,
+      })
+      .then(() => {
+        toast.success("Transfer updated successfully");
+        closeModal();
+        fetchTransfers();
+      })
+      .catch((err) => {
+        toast.error("Failed to update transfer");
+        console.error(err);
+      });
   };
+  
+  
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this transfer?")) return;
@@ -115,6 +154,34 @@ const TransferTable = () => {
 
       <Modal title="Edit Transfer" isOpen={showModal} onClose={closeModal}>
         <form onSubmit={handleUpdate} className="space-y-3 text-sm">
+          <select
+            className="w-full p-2 border"
+            value={editData.fromWalletId}
+            onChange={(e) => setEditData({ ...editData, fromWalletId: e.target.value })}
+            required
+          >
+            <option value="">Select From Wallet</option>
+            {wallets.map((wallet: any) => (
+              <option key={wallet.id} value={wallet.id}>
+                {wallet.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="w-full p-2 border"
+            value={editData.toWalletId}
+            onChange={(e) => setEditData({ ...editData, toWalletId: e.target.value })}
+            required
+          >
+            <option value="">Select To Wallet</option>
+            {wallets.map((wallet: any) => (
+              <option key={wallet.id} value={wallet.id}>
+                {wallet.name}
+              </option>
+            ))}
+          </select>
+
           <input
             className="w-full p-2 border"
             placeholder="Description"
@@ -143,6 +210,7 @@ const TransferTable = () => {
           </div>
         </form>
       </Modal>
+
     </div>
   );
 };
