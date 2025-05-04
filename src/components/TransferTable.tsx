@@ -11,6 +11,11 @@ const TransferTable = () => {
   const [selectedTransfer, setSelectedTransfer] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [wallets, setWallets] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const limit = 2;
   const [editData, setEditData] = useState({
     description: "",
     amount: 0,
@@ -22,14 +27,33 @@ const TransferTable = () => {
 
   const fetchTransfers = () => {
     setLoading(true);
+    const params: any = {
+      page: currentPage,
+      limit,
+    };
+
+    if (selectedMonth && selectedYear) {
+      const startDate = `${selectedYear}-${selectedMonth}-01`;
+      const endDate = new Date(
+        parseInt(selectedYear),
+        parseInt(selectedMonth),
+        0
+      )
+        .toISOString()
+        .slice(0, 10);
+      params.startDate = startDate;
+      params.endDate = endDate;
+    }
+
     axios
-      .get("/transfer/paginated?page=1&limit=5")
+      .get("/transfer/paginated", { params })
       .then((res) => {
         setTransfers(res.data.data || []);
+        setTotalPages(res.data.totalPages || 1);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Failed to fetch transfer data:", err);
+        console.error("Failed to fetch transfers:", err);
         setLoading(false);
       });
   };
@@ -37,7 +61,7 @@ const TransferTable = () => {
   useEffect(() => {
     fetchTransfers();
     fetchWallets();
-  }, []);
+  }, [currentPage, selectedMonth, selectedYear]);
   
   const fetchWallets = () => {
     axios
@@ -112,6 +136,42 @@ const TransferTable = () => {
   return (
     <div className="mt-6 overflow-x-auto">
       <h2 className="text-lg font-semibold mb-4">Recent Transfers</h2>
+      <div className="flex items-center gap-4 mb-4 text-sm">
+        <select
+          className="border p-2"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+        >
+          <option value="">Month</option>
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
+              {new Date(0, i).toLocaleString("default", { month: "long" })}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="border p-2"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+        >
+          <option value="">Year</option>
+          {["2023", "2024", "2025", "2026"].map((year) => (
+            <option key={year}>{year}</option>
+          ))}
+        </select>
+
+        <button
+          className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
+          onClick={() => {
+            setSelectedMonth("");
+            setSelectedYear("");
+            setCurrentPage(1);
+          }}
+        >
+          Clear Filters
+        </button>
+      </div>
       {loading ? (
         <p>Loading...</p>
       ) : (
@@ -151,6 +211,25 @@ const TransferTable = () => {
           </tbody>
         </table>
       )}
+      <div className="flex justify-between items-center mt-4 text-sm">
+        <button
+          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((prev) => prev - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+        >
+          Next
+        </button>
+      </div>
 
       <Modal title="Edit Transfer" isOpen={showModal} onClose={closeModal}>
         <form onSubmit={handleUpdate} className="space-y-3 text-sm">

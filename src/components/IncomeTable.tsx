@@ -10,6 +10,10 @@ const IncomeTable = () => {
   const [loading, setLoading] = useState(true);
   const [selectedIncome, setSelectedIncome] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
   const [editData, setEditData] = useState({
     name: "",
     amount: 0,
@@ -18,13 +22,34 @@ const IncomeTable = () => {
     walletId: "",
   });
 
-  // Fetch data
+  const limit = 5;
+
   const fetchIncomes = () => {
     setLoading(true);
+    const params: any = {
+      page: currentPage,
+      limit,
+    };
+
+    // If month & year selected, generate startDate and endDate
+    if (selectedMonth && selectedYear) {
+      const startDate = `${selectedYear}-${selectedMonth}-01`;
+      const endDate = new Date(
+        parseInt(selectedYear),
+        parseInt(selectedMonth),
+        0
+      )
+        .toISOString()
+        .slice(0, 10);
+      params.startDate = startDate;
+      params.endDate = endDate;
+    }
+
     axios
-      .get("/income/paginated?page=1&limit=5")
+      .get("/income/paginated", { params })
       .then((res) => {
         setIncomes(res.data.data || []);
+        setTotalPages(res.data.totalPages || 1);
         setLoading(false);
       })
       .catch((err) => {
@@ -35,7 +60,7 @@ const IncomeTable = () => {
 
   useEffect(() => {
     fetchIncomes();
-  }, []);
+  }, [currentPage, selectedMonth, selectedYear]);
 
   useEffect(() => {
     axios
@@ -67,9 +92,9 @@ const IncomeTable = () => {
 
   const handleUpdate = (e: FormEvent) => {
     e.preventDefault();
-  
+
     if (!selectedIncome) return;
-  
+
     axios
       .put(`/income/update/${selectedIncome.id}`, {
         ...editData,
@@ -79,14 +104,13 @@ const IncomeTable = () => {
       .then(() => {
         toast.success("Income updated successfully");
         closeModal();
-        fetchIncomes(); // refresh table
+        fetchIncomes();
       })
       .catch((err) => {
         toast.error("Failed to update income");
         console.error(err);
       });
   };
-  
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this income?")) return;
@@ -95,7 +119,7 @@ const IncomeTable = () => {
       .delete(`/income/delete/${id}`)
       .then(() => {
         toast.success("Income deleted successfully");
-        fetchIncomes(); // refresh the list
+        fetchIncomes();
       })
       .catch((err) => {
         toast.error("Failed to delete income");
@@ -104,53 +128,116 @@ const IncomeTable = () => {
   };
 
   return (
-    <div className="mt-6 overflow-x-auto">
+    <div className="mt-6">
       <h2 className="text-lg font-semibold mb-4">Recent Incomes</h2>
+
+      {/* Filters */}
+      <div className="flex items-center gap-4 mb-4 text-sm">
+        <select
+          className="border p-2"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+        >
+          <option value="">Month</option>
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
+              {new Date(0, i).toLocaleString("default", { month: "long" })}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="border p-2"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+        >
+          <option value="">Year</option>
+          {["2023", "2024", "2025", "2026"].map((year) => (
+            <option key={year}>{year}</option>
+          ))}
+        </select>
+
+        <button
+          className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
+          onClick={() => {
+            setSelectedMonth("");
+            setSelectedYear("");
+            setCurrentPage(1);
+          }}
+        >
+          Clear Filters
+        </button>
+      </div>
+
+      {/* Table */}
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <table className="w-full border-collapse border text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">Serial</th>
-              <th className="border p-2">Income Name</th>
-              <th className="border p-2">Description</th>
-              <th className="border p-2">Wallet Name</th>
-              <th className="border p-2">Amount</th>
-              <th className="border p-2">Date Created</th>
-              <th className="border p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incomes.map((item: any, index: number) => (
-              <tr key={item.id}>
-                <td className="border p-2 text-center">{index + 1}</td>
-                <td className="border p-2">{item.name}</td>
-                <td className="border p-2">{item.description}</td>
-                <td className="border p-2">{item.wallet?.name || "N/A"}</td>
-                <td className="border p-2">৳ {item.amount}</td>
-                <td className="border p-2">
-                  {new Date(item.createdAt).toLocaleString()}
-                </td>
-                <td className="border p-2 text-center">
-                  <button
-                    className="text-blue-500 hover:text-blue-700 mr-2"
-                    onClick={() => openModal(item)}
-                  >
-                    <FiEdit />
-                  </button>
-                  <button
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <FiTrash2 />
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-2">Serial</th>
+                <th className="border p-2">Income Name</th>
+                <th className="border p-2">Description</th>
+                <th className="border p-2">Wallet Name</th>
+                <th className="border p-2">Amount</th>
+                <th className="border p-2">Date Created</th>
+                <th className="border p-2">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {incomes.map((item: any, index: number) => (
+                <tr key={item.id}>
+                  <td className="border p-2 text-center">{index + 1}</td>
+                  <td className="border p-2">{item.name}</td>
+                  <td className="border p-2">{item.description}</td>
+                  <td className="border p-2">{item.wallet?.name || "N/A"}</td>
+                  <td className="border p-2">৳ {item.amount}</td>
+                  <td className="border p-2">
+                    {new Date(item.createdAt).toLocaleString()}
+                  </td>
+                  <td className="border p-2 text-center">
+                    <button
+                      className="text-blue-500 hover:text-blue-700 mr-2"
+                      onClick={() => openModal(item)}
+                    >
+                      <FiEdit />
+                    </button>
+                    <button
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
+
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-4 text-sm">
+        <button
+          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((prev) => prev - 1)}
+        >
+          Previous
+        </button>
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+        >
+          Next
+        </button>
+      </div>
 
       {/* Edit Form Modal */}
       <Modal title="Edit Income" isOpen={showModal} onClose={closeModal}>
