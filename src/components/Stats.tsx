@@ -3,6 +3,8 @@ import { Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import axios from '../api/axios';
 import { toast } from 'react-toastify';
+import ExpenseTable from './ExpenseTable';
+import IncomeTable from './IncomeTable';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -49,8 +51,8 @@ export default function Stats() {
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [activeTable, setActiveTable] = useState('expense');
+  // const [year, setYear] = useState(new Date().getFullYear());
+  // const [activeTable, setActiveTable] = useState('expense');
 
   const fetchDashboardData = async () => {
     try {
@@ -112,7 +114,7 @@ export default function Stats() {
 
       {/* Row 2 - Table and Filter */}
       <div className="bg-white p-4 rounded shadow">
-        <div className="flex items-center justify-between mb-3">
+        {/* <div className="flex items-center justify-between mb-3">
           <select onChange={(e) => setActiveTable(e.target.value)} value={activeTable} className="border p-1">
             <option value="wallet">Wallet</option>
             <option value="income">Income</option>
@@ -127,10 +129,11 @@ export default function Stats() {
             </select>
             <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="border p-1 w-24" />
           </div>
-        </div>
+        </div> */}
 
         {/* Placeholder Table */}
-        <table className="w-full border">
+        {/* <h2 className="font-semibold mb-2">Recent Transaction</h2> */}
+        {/* <table className="w-full border">
           <thead>
             <tr>
               <th className="border p-2">Name</th>
@@ -143,7 +146,9 @@ export default function Stats() {
               <td className="border p-2 text-center" colSpan={3}>Table data will be added later</td>
             </tr>
           </tbody>
-        </table>
+        </table> */}
+        <ExpenseTable />
+        <IncomeTable />
       </div>
     </div>
   );
