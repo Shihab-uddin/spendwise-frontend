@@ -3,9 +3,16 @@
 
 Tech: React + Vite + tailwind + Typescript
 
+## 🧪 Getting Started
+
+### 1. Clone the repository
+Make sure to clone the backend first
+
+```bash
 git clone 
 cd spendwise-frontend
-npm install 
+npm install
+npm run dev
 
 
 
